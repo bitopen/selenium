@@ -20,25 +20,52 @@
 module Selenium
   module WebDriver
     class DriverFinder
-      def self.path(options, klass)
+      def self.results(options, klass)
         path = klass.driver_path
         path = path.call if path.is_a?(Proc)
 
-        path ||= begin
-          SeleniumManager.driver_path(options) unless options.is_a?(Remote::Capabilities)
-        rescue StandardError => e
-          raise Error::NoSuchDriverError, "Unable to obtain #{klass::EXECUTABLE} using Selenium Manager; #{e.message}"
-        end
+        results = if path
+                    {driver_path: path}
+                  else
+                    begin
+                      SeleniumManager.results(to_args(options))
+                    rescue StandardError => e
+                      raise Error::NoSuchDriverError,
+                            "Unable to obtain #{klass::EXECUTABLE} using Selenium Manager; #{e.message}"
+                    end
+                  end
 
         begin
-          Platform.assert_executable(path)
+          Platform.assert_executable(results[:driver_path])
         rescue TypeError
           raise Error::NoSuchDriverError, "Unable to locate or obtain #{klass::EXECUTABLE}"
         rescue Error::WebDriverError => e
           raise Error::NoSuchDriverError, "#{klass::EXECUTABLE} located, but: #{e.message}"
         end
 
-        path
+        results
+      end
+
+      def self.path(options, klass)
+        WebDriver.logger.deprecate('`DriverFinder.path`', '`DriverFinder.results`', id: :driver_finder)
+        results(options, klass)[:driver_path]
+      end
+
+      def self.to_args(options)
+        args = ['--browser', options.browser_name]
+        if options.browser_version
+          args << '--browser-version'
+          args << options.browser_version
+        end
+        if options.respond_to?(:binary) && !options.binary.nil?
+          args << '--browser-path'
+          args << options.binary.gsub('\\', '\\\\\\')
+        end
+        if options.proxy
+          args << '--proxy'
+          args << (options.proxy.ssl || options.proxy.http)
+        end
+        args
       end
     end
   end

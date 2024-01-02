@@ -34,43 +34,22 @@ module Selenium
           @bin_path ||= '../../../../../bin'
         end
 
-        # @param [Options] options browser options.
-        # @return [String] the path to the correct driver.
-        def driver_path(options)
-          command = generate_command(binary, options)
-
-          output = run(*command)
+        # @param [Array] arguments what gets sent to to Selenium Manager binary.
+        # @return [Hash] paths to the requested assets.
+        def results(*arguments)
+          arguments += %w[--language-binding ruby]
+          arguments += %w[--output json]
+          arguments << '--debug' if WebDriver.logger.debug?
+          output = run(binary, *arguments)
 
           browser_path = Platform.cygwin? ? Platform.cygwin_path(output['browser_path']) : output['browser_path']
           driver_path = Platform.cygwin? ? Platform.cygwin_path(output['driver_path']) : output['driver_path']
           Platform.assert_executable driver_path
 
-          if options.respond_to?(:binary) && browser_path && !browser_path.empty?
-            options.binary = browser_path
-            options.browser_version = nil
-          end
-
-          driver_path
+          {driver_path: driver_path, browser_path: browser_path}
         end
 
         private
-
-        def generate_command(binary, options)
-          command = [binary, '--browser', options.browser_name]
-          if options.browser_version
-            command << '--browser-version'
-            command << options.browser_version
-          end
-          if options.respond_to?(:binary) && !options.binary.nil?
-            command << '--browser-path'
-            command << options.binary.gsub('\\', '\\\\\\')
-          end
-          if options.proxy
-            command << '--proxy'
-            command << (options.proxy.ssl || options.proxy.http)
-          end
-          command
-        end
 
         # @return [String] the path to the correct selenium manager
         def binary
@@ -112,10 +91,6 @@ module Selenium
         end
 
         def run(*command)
-          command += %w[--language-binding ruby]
-          command += %w[--output json]
-          command << '--debug' if WebDriver.logger.debug?
-
           WebDriver.logger.debug("Executing Process #{command}", id: :selenium_manager)
 
           begin
