@@ -18,8 +18,14 @@
 package org.openqa.selenium.remote.service;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import org.openqa.selenium.Capabilities;
+import org.openqa.selenium.MutableCapabilities;
+import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.internal.Require;
 import org.openqa.selenium.manager.SeleniumManager;
@@ -47,7 +53,9 @@ public class DriverFinder {
     result = new Result(System.getProperty(service.getDriverProperty()));
     if (result.getDriverPath() == null) {
       try {
-        result = SeleniumManager.getInstance().getDriverPath(options, offline);
+        List<String> arguments = toArguments(options, offline);
+        result = SeleniumManager.getInstance().getResult(arguments);
+        ((MutableCapabilities) options).setCapability("browserVersion", (String) null);
       } catch (RuntimeException e) {
         throw new WebDriverException(
             String.format("Unable to obtain: %s, error %s", options, e.getMessage()), e);
@@ -76,5 +84,64 @@ public class DriverFinder {
     }
 
     throw new NoSuchDriverException(message);
+  }
+
+  private static List<String> toArguments(Capabilities options, boolean offline) {
+    List<String> arguments = new ArrayList<>();
+    arguments.add("--browser");
+    arguments.add(options.getBrowserName());
+
+    if (!options.getBrowserVersion().isEmpty()) {
+      arguments.add("--browser-version");
+      arguments.add(options.getBrowserVersion());
+    }
+
+    String browserBinary = getBrowserBinary(options);
+    if (browserBinary != null && !browserBinary.isEmpty()) {
+      arguments.add("--browser-path");
+      arguments.add(browserBinary);
+    }
+
+    if (offline) {
+      arguments.add("--offline");
+    }
+
+    Proxy proxy = Proxy.extractFrom(options);
+    if (proxy != null) {
+      arguments.add("--proxy");
+      if (proxy.getSslProxy() != null) {
+        arguments.add(proxy.getSslProxy());
+      } else if (proxy.getHttpProxy() != null) {
+        arguments.add(proxy.getHttpProxy());
+      }
+    }
+    return arguments;
+  }
+
+  /**
+   * Returns the browser binary path when present in the vendor options
+   *
+   * @param options browser options used to start the session
+   * @return the browser binary path when present, only Chrome/Firefox/Edge
+   */
+  private static String getBrowserBinary(Capabilities options) {
+    List<String> vendorOptionsCapabilities =
+        Arrays.asList("moz:firefoxOptions", "goog:chromeOptions", "ms:edgeOptions");
+    for (String vendorOptionsCapability : vendorOptionsCapabilities) {
+      if (options.asMap().containsKey(vendorOptionsCapability)) {
+        try {
+          @SuppressWarnings("unchecked")
+          Map<String, Object> vendorOptions =
+              (Map<String, Object>) options.getCapability(vendorOptionsCapability);
+          return (String) vendorOptions.get("binary");
+        } catch (Exception e) {
+          LOG.warning(
+              String.format(
+                  "Exception while retrieving the browser binary path. %s: %s",
+                  options, e.getMessage()));
+        }
+      }
+    }
+    return null;
   }
 }

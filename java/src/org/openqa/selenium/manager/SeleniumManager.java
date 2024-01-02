@@ -72,7 +72,7 @@ public class SeleniumManager {
   private static volatile SeleniumManager manager;
   private final String managerPath = System.getenv("SE_MANAGER_PATH");
   private Path binary = managerPath == null ? null : Paths.get(managerPath);
-  private String seleniumManagerVersion;
+  private final String seleniumManagerVersion;
   private boolean binaryInTemporalFolder = false;
 
   /** Wrapper for the Selenium Manager binary. */
@@ -223,6 +223,8 @@ public class SeleniumManager {
    *
    * @param options browser options used to start the session
    * @return the browser binary path when present, only Chrome/Firefox/Edge
+   * @deprecated see {@see
+   *     org.openqa.selenium.remote.service.DriverFinder#getBrowserBinary(Capabilities)}
    */
   private String getBrowserBinary(Capabilities options) {
     List<String> vendorOptionsCapabilities =
@@ -250,7 +252,9 @@ public class SeleniumManager {
    *
    * @param options Browser Options instance.
    * @return the location of the driver.
+   * @deprecated use {@link #getResult(List)} instead with the list of arguments.
    */
+  @Deprecated
   public Result getDriverPath(Capabilities options, boolean offline) {
     Path binaryFile = getBinary();
     if (binaryFile == null) {
@@ -306,6 +310,25 @@ public class SeleniumManager {
             "Using driver at location: %s, browser at location %s",
             result.getDriverPath(), result.getBrowserPath()));
     return result;
+  }
+
+  /**
+   * Executes Selenium Manager to get the locations of the requested assets
+   *
+   * @param arguments List of command line arguments to send to Selenium Manager binary
+   * @return the locations of the assets from Selenium Manager execution
+   */
+  public Result getResult(List<String> arguments) {
+    arguments.add("--language-binding");
+    arguments.add("java");
+    arguments.add("--output");
+    arguments.add("json");
+
+    if (getLogLevel().intValue() <= Level.FINE.intValue()) {
+      arguments.add("--debug");
+    }
+
+    return runCommand(getBinary(), arguments);
   }
 
   private Level getLogLevel() {
