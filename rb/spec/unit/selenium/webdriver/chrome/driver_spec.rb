@@ -45,25 +45,25 @@ module Selenium
         end
 
         it 'uses DriverFinder when provided Service without path' do
-          allow(DriverFinder).to receive(:path)
+          allow(DriverFinder).to receive(:results).and_return({})
           expect_request
           options = Options.new
 
           described_class.new(service: service, options: options)
-          expect(DriverFinder).to have_received(:path).with(options, service.class)
+          expect(DriverFinder).to have_received(:results).with(options, service.class)
         end
 
         it 'does not use DriverFinder when provided Service with path' do
           expect_request
           allow(service).to receive(:executable_path).and_return('path')
-          allow(DriverFinder).to receive(:path)
+          allow(DriverFinder).to receive(:results).and_return({})
 
           described_class.new(service: service)
-          expect(DriverFinder).not_to have_received(:path)
+          expect(DriverFinder).not_to have_received(:results)
         end
 
         it 'does not require any parameters' do
-          allow(DriverFinder).to receive(:path).and_return('path')
+          allow(DriverFinder).to receive(:results).and_return({})
           allow(Platform).to receive(:assert_file)
           allow(Platform).to receive(:assert_executable)
 
@@ -73,7 +73,7 @@ module Selenium
         end
 
         it 'accepts provided Options as sole parameter' do
-          allow(DriverFinder).to receive(:path).and_return('path')
+          allow(DriverFinder).to receive(:results).and_return({})
           allow(Platform).to receive(:assert_file)
           allow(Platform).to receive(:assert_executable)
 
@@ -81,6 +81,14 @@ module Selenium
           expect_request(body: {capabilities: {alwaysMatch: {browserName: 'chrome', 'goog:chromeOptions': opts}}})
 
           expect { described_class.new(options: Options.new(**opts)) }.not_to raise_exception
+        end
+
+        it 'raises an ArgumentError if parameter is not recognized' do
+          allow(DriverFinder).to receive_messages(path: 'path', results: {})
+          allow(Platform).to receive(:assert_file)
+          allow(Platform).to receive(:assert_executable)
+          msg = 'unknown keyword: :invalid'
+          expect { described_class.new(invalid: 'foo') }.to raise_error(ArgumentError, msg)
         end
 
         it 'does not accept Options of the wrong class' do

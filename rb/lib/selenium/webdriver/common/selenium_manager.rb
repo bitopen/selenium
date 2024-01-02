@@ -42,11 +42,8 @@ module Selenium
           arguments << '--debug' if WebDriver.logger.debug?
           output = run(binary, *arguments)
 
-          browser_path = Platform.cygwin? ? Platform.cygwin_path(output['browser_path']) : output['browser_path']
-          driver_path = Platform.cygwin? ? Platform.cygwin_path(output['driver_path']) : output['driver_path']
-          Platform.assert_executable driver_path
-
-          {driver_path: driver_path, browser_path: browser_path}
+          {driver_path: Platform.cygwin? ? Platform.cygwin_path(output['driver_path']) : output['driver_path'],
+           browser_path: Platform.cygwin? ? Platform.cygwin_path(output['browser_path']) : output['browser_path']}
         end
 
         private
@@ -54,40 +51,17 @@ module Selenium
         # @return [String] the path to the correct selenium manager
         def binary
           @binary ||= begin
-            location = ENV.fetch('SE_MANAGER_PATH', begin
-              directory = File.expand_path(bin_path, __FILE__)
-              if Platform.windows?
-                "#{directory}/windows/selenium-manager.exe"
-              elsif Platform.mac?
-                "#{directory}/macos/selenium-manager"
-              elsif Platform.linux?
-                "#{directory}/linux/selenium-manager"
-              elsif Platform.unix?
-                WebDriver.logger.warn('Selenium Manager binary may not be compatible with Unix; verify settings',
-                                      id: %i[selenium_manager unix_binary])
-                "#{directory}/linux/selenium-manager"
-              end
-            rescue Error::WebDriverError => e
-              raise Error::WebDriverError, "Unable to obtain Selenium Manager binary for #{e.message}"
-            end)
+            if (location = ENV.fetch('SE_MANAGER_PATH', nil))
+              WebDriver.logger.debug("Selenium Manager set by ENV['SE_MANAGER_PATH']: #{location}")
+            else
+              location = platform_location
+              WebDriver.logger.debug("Looking for Selenium Manager at: #{location}")
+            end
 
-            validate_location(location)
+            Platform.assert_executable(location)
+            WebDriver.logger.debug("Selenium Manager binary found at #{location}", id: :selenium_manager)
             location
           end
-        end
-
-        def validate_location(location)
-          begin
-            Platform.assert_file(location)
-            Platform.assert_executable(location)
-          rescue TypeError
-            raise Error::WebDriverError,
-                  "Unable to locate or obtain Selenium Manager binary; #{location} is not a valid file object"
-          rescue Error::WebDriverError => e
-            raise Error::WebDriverError, "Selenium Manager binary located, but #{e.message}"
-          end
-
-          WebDriver.logger.debug("Selenium Manager binary found at #{location}", id: :selenium_manager)
         end
 
         def run(*command)
@@ -108,7 +82,24 @@ module Selenium
           result = json_output['result']
           return result unless status.exitstatus.positive?
 
-          raise Error::WebDriverError, "Unsuccessful command executed: #{command}\n#{result}#{stderr}"
+          raise Error::WebDriverError, "Unsuccessful command executed: #{command}\n#{result}\n#{stderr}"
+        end
+
+        def platform_location
+          directory = File.expand_path(bin_path, __FILE__)
+          if Platform.windows?
+            "#{directory}/windows/selenium-manager.exe"
+          elsif Platform.mac?
+            "#{directory}/macos/selenium-manager"
+          elsif Platform.linux?
+            "#{directory}/linux/selenium-manager"
+          elsif Platform.unix?
+            WebDriver.logger.warn('Selenium Manager binary may not be compatible with Unix',
+                                  id: %i[selenium_manager unix_binary])
+            "#{directory}/linux/selenium-manager"
+          else
+            raise Error::WebDriverError, "unsupported platform: #{Platform.os}"
+          end
         end
       end
     end # SeleniumManager

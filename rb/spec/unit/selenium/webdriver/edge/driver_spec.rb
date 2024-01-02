@@ -46,33 +46,34 @@ module Selenium
 
         it 'uses DriverFinder when provided Service without path' do
           expect_request
-          allow(DriverFinder).to receive(:path)
+          allow(DriverFinder).to receive(:results).and_return({})
           options = Options.new
 
           described_class.new(service: service, options: options)
-          expect(DriverFinder).to have_received(:path).with(options, service.class)
+          expect(DriverFinder).to have_received(:results).with(options, service.class)
         end
 
         it 'does not use DriverFinder when provided Service with path' do
           expect_request
           allow(service).to receive(:executable_path).and_return('path')
-          allow(DriverFinder).to receive(:path)
+          allow(DriverFinder).to receive(:results).and_return({})
 
           described_class.new(service: service)
-          expect(DriverFinder).not_to have_received(:path)
+          expect(DriverFinder).not_to have_received(:results)
         end
 
         it 'does not require any parameters' do
-          allow(DriverFinder).to receive(:path).and_return('path')
+          allow(DriverFinder).to receive(:results).and_return({})
           allow(Platform).to receive(:assert_file)
           allow(Platform).to receive(:assert_executable)
+
           expect_request
 
           expect { described_class.new }.not_to raise_exception
         end
 
         it 'accepts provided Options as sole parameter' do
-          allow(DriverFinder).to receive(:path).and_return('path')
+          allow(DriverFinder).to receive(:results).and_return({})
           allow(Platform).to receive(:assert_file)
           allow(Platform).to receive(:assert_executable)
           opts = {args: ['-f']}
@@ -82,7 +83,7 @@ module Selenium
         end
 
         it 'raises an ArgumentError if parameter is not recognized' do
-          allow(DriverFinder).to receive(:path).and_return('path')
+          allow(DriverFinder).to receive(:results).and_return({})
           allow(Platform).to receive(:assert_file)
           allow(Platform).to receive(:assert_executable)
           msg = 'unknown keyword: :invalid'

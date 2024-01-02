@@ -107,7 +107,7 @@ module Selenium
           end
 
           it 'is created when :url is not provided' do
-            allow(DriverFinder).to receive(:path).and_return('path')
+            allow(DriverFinder).to receive(:results).and_return({})
             allow(Platform).to receive(:assert_file)
             allow(Platform).to receive(:assert_executable)
             allow(described_class).to receive(:new).and_return(service)
@@ -117,7 +117,7 @@ module Selenium
           end
 
           it 'accepts :service without creating a new instance' do
-            allow(DriverFinder).to receive(:path).and_return('path')
+            allow(DriverFinder).to receive(:results).and_return({})
             allow(Platform).to receive(:assert_file)
             allow(Platform).to receive(:assert_executable)
             allow(described_class).to receive(:new)
