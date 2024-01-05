@@ -53,10 +53,8 @@ module Selenium
           @binary ||= begin
             if (location = ENV.fetch('SE_MANAGER_PATH', nil))
               WebDriver.logger.debug("Selenium Manager set by ENV['SE_MANAGER_PATH']: #{location}")
-            else
-              location = platform_location
-              WebDriver.logger.debug("Looking for Selenium Manager at: #{location}")
             end
+            location ||= platform_location
 
             Platform.assert_executable(location)
             WebDriver.logger.debug("Selenium Manager binary found at #{location}", id: :selenium_manager)

@@ -26,17 +26,17 @@ module Selenium
           path = path.call if path.is_a?(Proc)
           exe = klass::EXECUTABLE
 
-          if path
-            validate_files(driver_path: path)
-          else
-            begin
-              validate_files(**SeleniumManager.results(*to_args(options)))
-            rescue StandardError => e
-              WebDriver.logger.error("Exception occurred: #{e.message}")
-              WebDriver.logger.error("Backtrace:\n\t#{e.backtrace&.join("\n\t")}")
-              raise Error::NoSuchDriverError, "Unable to obtain #{exe} using Selenium Manager"
-            end
-          end
+          results = if path
+                      WebDriver.logger.debug("Skipping Selenium Manager; user provided #{exe} location: #{path}")
+                      {driver_path: path}
+                    else
+                      SeleniumManager.results(*to_args(options))
+                    end
+          validate_files(**results)
+        rescue StandardError => e
+          WebDriver.logger.error("Exception occurred: #{e.message}")
+          WebDriver.logger.error("Backtrace:\n\t#{e.backtrace&.join("\n\t")}")
+          raise Error::NoSuchDriverError, "Unable to obtain #{exe} using Selenium Manager"
         end
 
         def path(options, klass)
