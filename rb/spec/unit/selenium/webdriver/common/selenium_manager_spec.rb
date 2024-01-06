@@ -97,7 +97,7 @@ module Selenium
         it 'returns asset paths' do
           allow(described_class).to receive_messages(binary: 'binary', run: {'browser_path' => '/path/to/browser',
                                                                              'driver_path' => '/path/to/driver'})
-          expect(described_class.results('something')).to eq({browser_path: '/path/to/browser',
+          expect(described_class.result('something')).to eq({browser_path: '/path/to/browser',
                                                               driver_path: '/path/to/driver'})
         end
       end

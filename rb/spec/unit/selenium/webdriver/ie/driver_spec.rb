@@ -47,24 +47,24 @@ module Selenium
 
         it 'uses DriverFinder when provided Service without path' do
           expect_request
-          allow(DriverFinder).to receive(:results).and_return({})
+          allow(DriverFinder).to receive(:result).and_return({})
           options = Options.new
 
           described_class.new(service: service, options: options)
-          expect(DriverFinder).to have_received(:results).with(options, service.class)
+          expect(DriverFinder).to have_received(:result).with(options, service.class)
         end
 
         it 'does not use DriverFinder when provided Service with path' do
           expect_request
           allow(service).to receive(:executable_path).and_return('path')
-          allow(DriverFinder).to receive(:results).and_return({})
+          allow(DriverFinder).to receive(:result).and_return({})
 
           described_class.new(service: service)
-          expect(DriverFinder).not_to have_received(:results)
+          expect(DriverFinder).not_to have_received(:result)
         end
 
         it 'does not require any parameters' do
-          allow(DriverFinder).to receive(:results).and_return({})
+          allow(DriverFinder).to receive(:result).and_return({})
           allow(Platform).to receive(:assert_file)
           allow(Platform).to receive(:assert_executable)
           expect_request
@@ -73,7 +73,7 @@ module Selenium
         end
 
         it 'accepts provided Options as sole parameter' do
-          allow(DriverFinder).to receive(:results).and_return({})
+          allow(DriverFinder).to receive(:result).and_return({})
           allow(Platform).to receive(:assert_file)
           allow(Platform).to receive(:assert_executable)
           opts = {args: ['-f']}

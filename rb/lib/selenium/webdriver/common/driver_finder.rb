@@ -21,7 +21,7 @@ module Selenium
   module WebDriver
     class DriverFinder
       class << self
-        def results(options, klass)
+        def result(options, klass)
           path = klass.driver_path
           path = path.call if path.is_a?(Proc)
           exe = klass::EXECUTABLE
@@ -40,8 +40,8 @@ module Selenium
         end
 
         def path(options, klass)
-          WebDriver.logger.deprecate('`DriverFinder.path`', '`DriverFinder.results`', id: :driver_finder)
-          results(options, klass)[:driver_path]
+          WebDriver.logger.deprecate('`DriverFinder.path`', '`DriverFinder.result`', id: :driver_finder)
+          result(options, klass)[:driver_path]
         end
 
         private

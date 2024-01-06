@@ -89,7 +89,7 @@ module Selenium
       def launch
         @executable_path ||= begin
           default_options = WebDriver.const_get("#{self.class.name&.split('::')&.[](2)}::Options").new
-          DriverFinder.results(default_options, self.class)[:driver_path]
+          DriverFinder.result(default_options, self.class)[:driver_path]
         end
         ServiceManager.new(self).tap(&:start)
       end
