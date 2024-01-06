@@ -45,18 +45,15 @@ module Selenium
       end
 
       it 'validates all returned files' do
-        allow(SeleniumManager).to receive(:result).and_return({browser_path: '/path/to/browser',
-                                                                driver_path: '/path/to/driver',
-                                                                anything: '/path/to/random'})
+        allow(SeleniumManager).to receive(:result).and_return({'browser_path' => '/path/to/browser',
+                                                               'driver_path' => '/path/to/driver'})
         allow(Platform).to receive(:assert_executable).with('/path/to/browser').and_return(true)
         allow(Platform).to receive(:assert_executable).with('/path/to/driver').and_return(true)
-        allow(Platform).to receive(:assert_executable).with('/path/to/random').and_return(true)
 
         described_class.result(Options.chrome, Chrome::Service)
 
         expect(Platform).to have_received(:assert_executable).with('/path/to/browser')
         expect(Platform).to have_received(:assert_executable).with('/path/to/driver')
-        expect(Platform).to have_received(:assert_executable).with('/path/to/random')
       end
 
       it 'wraps error with NoSuchDriverError' do
@@ -67,24 +64,27 @@ module Selenium
             described_class.result(Options.chrome, Chrome::Service)
           }.to output(/Exception occurred: an error/).to_stderr_from_any_process
         }.to raise_error(WebDriver::Error::NoSuchDriverError,
-                         /Unable to obtain chromedriver using Selenium Manager; For documentation on this error/)
+                         /Unable to obtain chromedriver; For documentation on this error/)
       end
 
       it 'creates arguments' do
-        allow(SeleniumManager).to receive(:result).and_return({})
+        allow(SeleniumManager).to receive(:result).and_return({'browser_path' => '/path/to/browser',
+                                                               'driver_path' => '/path/to/driver'})
         proxy = instance_double(Proxy, ssl: 'proxy')
         options = Options.chrome(browser_version: 'stable', proxy: proxy, binary: 'path/to/browser')
+        allow(Platform).to receive(:assert_executable).with('/path/to/browser').and_return(true)
+        allow(Platform).to receive(:assert_executable).with('/path/to/driver').and_return(true)
 
         described_class.result(options, Chrome::Service)
 
         expect(SeleniumManager).to have_received(:result).with('--browser',
-                                                                options.browser_name,
-                                                                '--browser-version',
-                                                                options.browser_version,
-                                                                '--browser-path',
-                                                                options.binary,
-                                                                '--proxy',
-                                                                options.proxy.ssl)
+                                                               options.browser_name,
+                                                               '--browser-version',
+                                                               options.browser_version,
+                                                               '--browser-path',
+                                                               options.binary,
+                                                               '--proxy',
+                                                               options.proxy.ssl)
       end
     end
   end

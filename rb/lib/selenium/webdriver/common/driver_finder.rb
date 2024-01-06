@@ -26,17 +26,22 @@ module Selenium
           path = path.call if path.is_a?(Proc)
           exe = klass::EXECUTABLE
 
-          results = if path
-                      WebDriver.logger.debug("Skipping Selenium Manager; user provided #{exe} location: #{path}")
-                      {driver_path: path}
-                    else
-                      SeleniumManager.results(*to_args(options))
-                    end
-          validate_files(**results)
+          if path
+            WebDriver.logger.debug("Skipping Selenium Manager; path to #{exe} specified in service class: #{path}")
+            Platform.assert_executable(path)
+            {driver_path: path}
+          else
+            output = SeleniumManager.result(*to_args(options))
+            result = {driver_path: Platform.cygwin_path(output['driver_path'], only_cygwin: true),
+                      browser_path: Platform.cygwin_path(output['browser_path'], only_cygwin: true)}
+            Platform.assert_executable(result[:driver_path])
+            Platform.assert_executable(result[:browser_path])
+            result
+          end
         rescue StandardError => e
           WebDriver.logger.error("Exception occurred: #{e.message}")
           WebDriver.logger.error("Backtrace:\n\t#{e.backtrace&.join("\n\t")}")
-          raise Error::NoSuchDriverError, "Unable to obtain #{exe} using Selenium Manager"
+          raise Error::NoSuchDriverError, "Unable to obtain #{exe}"
         end
 
         def path(options, klass)
@@ -61,11 +66,6 @@ module Selenium
             args << (options.proxy.ssl || options.proxy.http)
           end
           args
-        end
-
-        def validate_files(**opts)
-          opts.each_value { |value| Platform.assert_executable(value) }
-          opts
         end
       end
     end

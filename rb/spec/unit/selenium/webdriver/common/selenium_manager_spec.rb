@@ -68,7 +68,7 @@ module Selenium
       describe '.run' do
         it 'returns result if positive exit status' do
           status = instance_double(Process::Status, exitstatus: 0)
-          stdout = '{"result": "value"}'
+          stdout = '{"result": "value", "logs": []}'
           allow(Open3).to receive(:capture3).and_return([stdout, 'stderr', status])
 
           expect(described_class.send(:run, 'anything')).to eq 'value'
@@ -84,21 +84,21 @@ module Selenium
 
         it 'errors if exit status greater than 0' do
           status = instance_double(Process::Status, exitstatus: 1)
-          stdout = '{"result": "value"}'
+          stdout = '{"result": "value", "logs": []}'
           allow(Open3).to receive(:capture3).and_return([stdout, 'stderr', status])
 
+          msg = /Unsuccessful command executed: \["anything"\] - Code 1\nvalue\nstderr/
           expect {
             described_class.send(:run, 'anything')
-          }.to raise_error(Error::WebDriverError, /Unsuccessful command executed: \["anything"\]\nvalue\nstderr/)
+          }.to raise_error(Error::WebDriverError, msg)
         end
       end
 
       describe '.results' do
-        it 'returns asset paths' do
-          allow(described_class).to receive_messages(binary: 'binary', run: {'browser_path' => '/path/to/browser',
-                                                                             'driver_path' => '/path/to/driver'})
-          expect(described_class.result('something')).to eq({browser_path: '/path/to/browser',
-                                                              driver_path: '/path/to/driver'})
+        it 'returns exact output from #run' do
+          return_map = {}
+          allow(described_class).to receive_messages(binary: 'binary', run: return_map)
+          expect(described_class.result('something')).to eq(return_map)
         end
       end
     end

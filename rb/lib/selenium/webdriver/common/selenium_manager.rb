@@ -36,14 +36,12 @@ module Selenium
 
         # @param [Array] arguments what gets sent to to Selenium Manager binary.
         # @return [Hash] paths to the requested assets.
-        def results(*arguments)
+        def result(*arguments)
           arguments += %w[--language-binding ruby]
           arguments += %w[--output json]
           arguments << '--debug' if WebDriver.logger.debug?
-          output = run(binary, *arguments)
 
-          {driver_path: Platform.cygwin? ? Platform.cygwin_path(output['driver_path']) : output['driver_path'],
-           browser_path: Platform.cygwin? ? Platform.cygwin_path(output['browser_path']) : output['browser_path']}
+          run(binary, *arguments)
         end
 
         private
@@ -71,16 +69,17 @@ module Selenium
             raise Error::WebDriverError, "Unsuccessful command executed: #{command}; #{e.message}"
           end
 
-          json_output = stdout.empty? ? {} : JSON.parse(stdout)
-          (json_output['logs'] || []).each do |log|
+          json_output = stdout.empty? ? {'logs' => [], 'result' => {}} : JSON.parse(stdout)
+          json_output['logs'].each do |log|
             level = log['level'].casecmp('info').zero? ? 'debug' : log['level'].downcase
             WebDriver.logger.send(level, log['message'], id: :selenium_manager)
           end
 
           result = json_output['result']
-          return result unless status.exitstatus.positive?
+          return result unless status.exitstatus.positive? || result.nil?
 
-          raise Error::WebDriverError, "Unsuccessful command executed: #{command}\n#{result}\n#{stderr}"
+          raise Error::WebDriverError,
+                "Unsuccessful command executed: #{command} - Code #{status.exitstatus}\n#{result}\n#{stderr}"
         end
 
         def platform_location
