@@ -201,9 +201,7 @@ public class SeleniumManager {
             binary.getParent().toFile().mkdirs();
             Files.copy(inputStream, binary);
           }
-          binary.toFile().setExecutable(true);
         }
-
       } catch (Exception e) {
         throw new WebDriverException("Unable to obtain Selenium Manager Binary", e);
       }
@@ -214,7 +212,6 @@ public class SeleniumManager {
     binary.toFile().setExecutable(true);
 
     LOG.fine(String.format("Selenium Manager binary found at: %s", binary));
-
     return binary;
   }
 

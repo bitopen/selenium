@@ -17,7 +17,8 @@
 
 package org.openqa.selenium.remote.service;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,10 +37,45 @@ public class DriverFinder {
 
   private static final Logger LOG = Logger.getLogger(DriverFinder.class.getName());
 
+  public static Result getResult(DriverService service, Capabilities options) {
+    return getResult(service, options, false);
+  }
+
+  public static Result getResult(DriverService service, Capabilities options, boolean offline) {
+    Require.nonNull("Driver service", service);
+    Require.nonNull("Browser options", options);
+    String driverName = service.getDriverName();
+
+    try {
+      Result result = new Result(service.getExecutable());
+      if (result.getDriverPath() != null) {
+        LOG.fine(String.format("Skipping Selenium Manager, path to %s specified in Service class: %s", driverName, result.getDriverPath()));
+        result.validateDriver();
+      }
+
+      result = new Result(System.getProperty(service.getDriverProperty()));
+      if (result.getDriverPath() == null) {
+        List<String> arguments = toArguments(options, offline);
+        result = SeleniumManager.getInstance().getResult(arguments);
+        result.validateAll();
+      } else {
+        LOG.fine(String.format("Skipping Selenium Manager, path to %s found in system property: %s", driverName, result.getDriverPath()));
+        result.validateDriver();
+      }
+
+      return result;
+    } catch (RuntimeException e) {
+      throw new NoSuchDriverException(
+        String.format("Unable to obtain: %s, error %s", driverName, e.getMessage()), e);
+    }
+  }
+
+  @Deprecated
   public static Result getPath(DriverService service, Capabilities options) {
     return getPath(service, options, false);
   }
 
+  @Deprecated
   public static Result getPath(DriverService service, Capabilities options, boolean offline) {
     Require.nonNull("Browser options", options);
     Result result = new Result(service.getExecutable());
@@ -70,11 +106,11 @@ public class DriverFinder {
     String message;
     if (result.getDriverPath() == null) {
       message = String.format("Unable to locate or obtain %s", service.getDriverName());
-    } else if (!new File(result.getDriverPath()).exists()) {
+    } else if (!Files.exists(Path.of(result.getDriverPath()))) {
       message =
           String.format(
               "%s at location %s, does not exist", service.getDriverName(), result.getDriverPath());
-    } else if (!new File(result.getDriverPath()).canExecute()) {
+    } else if (!Files.isExecutable(Path.of(result.getDriverPath()))) {
       message =
           String.format(
               "%s located at %s, cannot be executed",

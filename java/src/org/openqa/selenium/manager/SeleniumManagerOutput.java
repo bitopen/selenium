@@ -16,7 +16,11 @@
 // under the License.
 package org.openqa.selenium.manager;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import org.openqa.selenium.internal.Require;
@@ -137,6 +141,29 @@ public class SeleniumManagerOutput {
 
     public String getBrowserPath() {
       return browserPath;
+    }
+
+    public void validateDriver() {
+      Map<String, String> entries = Map.of("driver", driverPath);
+      validate(entries);
+    }
+
+    public void validateAll() {
+      Map<String, String> entries =  Map.of("driver", driverPath, "browser", browserPath);
+      validate(entries);
+    }
+
+    private void validate(Map<String, String> entries) {
+      for (Map.Entry<String, String> entry : entries.entrySet()) {
+        Path filePath = Paths.get(entry.getValue());
+        if (!Files.exists(filePath)) {
+          throw new IllegalArgumentException("The path for '" + entry.getKey() +
+            "' is not a valid file: " + entry.getValue());
+        } else if (!Files.isExecutable(filePath)) {
+          throw new IllegalArgumentException("The file at '" + entry.getKey() +
+            "' is not executable: " + entry.getValue());
+        }
+      }
     }
 
     @Override

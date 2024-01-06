@@ -66,7 +66,7 @@ public class ChromeDriverInfo extends ChromiumDriverInfo {
   @Override
   public boolean isAvailable() {
     try {
-      DriverFinder.getPath(ChromeDriverService.createDefaultService(), getCanonicalCapabilities());
+      DriverFinder.getResult(ChromeDriverService.createDefaultService(), getCanonicalCapabilities());
       return true;
     } catch (NoSuchDriverException e) {
       return false;
@@ -79,7 +79,7 @@ public class ChromeDriverInfo extends ChromiumDriverInfo {
   @Override
   public boolean isPresent() {
     try {
-      DriverFinder.getPath(
+      DriverFinder.getResult(
           ChromeDriverService.createDefaultService(), getCanonicalCapabilities(), true);
       return true;
     } catch (NoSuchDriverException e) {

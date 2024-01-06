@@ -96,10 +96,11 @@ public class ChromeDriver extends ChromiumDriver {
     Require.nonNull("Driver service", service);
     Require.nonNull("Driver options", options);
     Require.nonNull("Driver clientConfig", clientConfig);
-    Result result = DriverFinder.getPath(service, options);
+    Result result = DriverFinder.getResult(service, options);
     service.setExecutable(result.getDriverPath());
     if (result.getBrowserPath() != null && !result.getBrowserPath().isEmpty()) {
       options.setBinary(result.getBrowserPath());
+      options.setCapability("browserVersion", (Object) null);
     }
     return new ChromeDriverCommandExecutor(service, clientConfig);
   }
