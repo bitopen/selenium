@@ -17,17 +17,13 @@
 
 package org.openqa.selenium.remote.service;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.openqa.selenium.Capabilities;
-import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.Proxy;
-import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.internal.Require;
 import org.openqa.selenium.manager.SeleniumManager;
 import org.openqa.selenium.manager.SeleniumManagerOutput.Result;
@@ -44,12 +40,13 @@ public class DriverFinder {
   public static Result getResult(DriverService service, Capabilities options, boolean offline) {
     Require.nonNull("Driver service", service);
     Require.nonNull("Browser options", options);
-    String driverName = service.getDriverName();
-
     try {
       Result result = new Result(service.getExecutable());
       if (result.getDriverPath() != null) {
-        LOG.fine(String.format("Skipping Selenium Manager, path to %s specified in Service class: %s", driverName, result.getDriverPath()));
+        LOG.fine(
+            String.format(
+                "Skipping Selenium Manager, path to %s specified in Service class: %s",
+                service.getDriverName(), result.getDriverPath()));
         result.validateDriver();
       }
 
@@ -59,67 +56,19 @@ public class DriverFinder {
         result = SeleniumManager.getInstance().getResult(arguments);
         result.validateAll();
       } else {
-        LOG.fine(String.format("Skipping Selenium Manager, path to %s found in system property: %s", driverName, result.getDriverPath()));
+        LOG.fine(
+            String.format(
+                "Skipping Selenium Manager, path to %s found in system property: %s",
+                service.getDriverName(), result.getDriverPath()));
         result.validateDriver();
       }
 
       return result;
     } catch (RuntimeException e) {
       throw new NoSuchDriverException(
-        String.format("Unable to obtain: %s, error %s", driverName, e.getMessage()), e);
+          String.format("Unable to obtain: %s, error %s", service.getDriverName(), e.getMessage()),
+          e);
     }
-  }
-
-  @Deprecated
-  public static Result getPath(DriverService service, Capabilities options) {
-    return getPath(service, options, false);
-  }
-
-  @Deprecated
-  public static Result getPath(DriverService service, Capabilities options, boolean offline) {
-    Require.nonNull("Browser options", options);
-    Result result = new Result(service.getExecutable());
-    if (result.getDriverPath() != null) {
-      LOG.fine(
-          String.format(
-              "Skipping Selenium Manager, path to %s specified in Service class: %s",
-              service.getDriverName(), result.getDriverPath()));
-    }
-
-    result = new Result(System.getProperty(service.getDriverProperty()));
-    if (result.getDriverPath() == null) {
-      try {
-        List<String> arguments = toArguments(options, offline);
-        result = SeleniumManager.getInstance().getResult(arguments);
-        ((MutableCapabilities) options).setCapability("browserVersion", (String) null);
-      } catch (RuntimeException e) {
-        throw new WebDriverException(
-            String.format("Unable to obtain: %s, error %s", options, e.getMessage()), e);
-      }
-    } else {
-      LOG.fine(
-          String.format(
-              "Skipping Selenium Manager, path to %s found in system property: %s",
-              service.getDriverName(), result.getDriverPath()));
-    }
-
-    String message;
-    if (result.getDriverPath() == null) {
-      message = String.format("Unable to locate or obtain %s", service.getDriverName());
-    } else if (!Files.exists(Path.of(result.getDriverPath()))) {
-      message =
-          String.format(
-              "%s at location %s, does not exist", service.getDriverName(), result.getDriverPath());
-    } else if (!Files.isExecutable(Path.of(result.getDriverPath()))) {
-      message =
-          String.format(
-              "%s located at %s, cannot be executed",
-              service.getDriverName(), result.getDriverPath());
-    } else {
-      return result;
-    }
-
-    throw new NoSuchDriverException(message);
   }
 
   private static List<String> toArguments(Capabilities options, boolean offline) {

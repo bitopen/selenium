@@ -149,7 +149,7 @@ public class SeleniumManagerOutput {
     }
 
     public void validateAll() {
-      Map<String, String> entries =  Map.of("driver", driverPath, "browser", browserPath);
+      Map<String, String> entries = Map.of("driver", driverPath, "browser", browserPath);
       validate(entries);
     }
 
@@ -157,11 +157,11 @@ public class SeleniumManagerOutput {
       for (Map.Entry<String, String> entry : entries.entrySet()) {
         Path filePath = Paths.get(entry.getValue());
         if (!Files.exists(filePath)) {
-          throw new IllegalArgumentException("The path for '" + entry.getKey() +
-            "' is not a valid file: " + entry.getValue());
+          throw new IllegalArgumentException(
+              "The path for '" + entry.getKey() + "' is not a valid file: " + entry.getValue());
         } else if (!Files.isExecutable(filePath)) {
-          throw new IllegalArgumentException("The file at '" + entry.getKey() +
-            "' is not executable: " + entry.getValue());
+          throw new IllegalArgumentException(
+              "The file at '" + entry.getKey() + "' is not executable: " + entry.getValue());
         }
       }
     }

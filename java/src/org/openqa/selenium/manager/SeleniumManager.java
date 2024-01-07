@@ -27,18 +27,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openqa.selenium.Beta;
 import org.openqa.selenium.BuildInfo;
-import org.openqa.selenium.Capabilities;
-import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.Platform;
-import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.json.Json;
 import org.openqa.selenium.json.JsonException;
@@ -213,100 +207,6 @@ public class SeleniumManager {
 
     LOG.fine(String.format("Selenium Manager binary found at: %s", binary));
     return binary;
-  }
-
-  /**
-   * Returns the browser binary path when present in the vendor options
-   *
-   * @param options browser options used to start the session
-   * @return the browser binary path when present, only Chrome/Firefox/Edge
-   * @deprecated see {@see
-   *     org.openqa.selenium.remote.service.DriverFinder#getBrowserBinary(Capabilities)}
-   */
-  private String getBrowserBinary(Capabilities options) {
-    List<String> vendorOptionsCapabilities =
-        Arrays.asList("moz:firefoxOptions", "goog:chromeOptions", "ms:edgeOptions");
-    for (String vendorOptionsCapability : vendorOptionsCapabilities) {
-      if (options.asMap().containsKey(vendorOptionsCapability)) {
-        try {
-          @SuppressWarnings("unchecked")
-          Map<String, Object> vendorOptions =
-              (Map<String, Object>) options.getCapability(vendorOptionsCapability);
-          return (String) vendorOptions.get("binary");
-        } catch (Exception e) {
-          LOG.warning(
-              String.format(
-                  "Exception while retrieving the browser binary path. %s: %s",
-                  options, e.getMessage()));
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Determines the location of the correct driver.
-   *
-   * @param options Browser Options instance.
-   * @return the location of the driver.
-   * @deprecated use {@link #getResult(List)} instead with the list of arguments.
-   */
-  @Deprecated
-  public Result getDriverPath(Capabilities options, boolean offline) {
-    Path binaryFile = getBinary();
-    if (binaryFile == null) {
-      return null;
-    }
-
-    List<String> arguments = new ArrayList<>();
-    arguments.add("--browser");
-    arguments.add(options.getBrowserName());
-    arguments.add("--language-binding");
-    arguments.add("java");
-    arguments.add("--output");
-    arguments.add("json");
-
-    if (!options.getBrowserVersion().isEmpty()) {
-      arguments.add("--browser-version");
-      arguments.add(options.getBrowserVersion());
-      // We know the browser binary path, we don't need the browserVersion.
-      // Useful when "beta" is specified as browserVersion, but the browser driver cannot match it.
-      if (options instanceof MutableCapabilities) {
-        ((MutableCapabilities) options).setCapability("browserVersion", (String) null);
-      }
-    }
-
-    String browserBinary = getBrowserBinary(options);
-    if (browserBinary != null && !browserBinary.isEmpty()) {
-      arguments.add("--browser-path");
-      arguments.add(browserBinary);
-    }
-
-    if (getLogLevel().intValue() <= Level.FINE.intValue()) {
-      arguments.add("--debug");
-    }
-
-    if (offline) {
-      arguments.add("--offline");
-    }
-
-    Proxy proxy = Proxy.extractFrom(options);
-    if (proxy != null) {
-      if (proxy.getSslProxy() != null) {
-        arguments.add("--proxy");
-        arguments.add(proxy.getSslProxy());
-      } else if (proxy.getHttpProxy() != null) {
-        arguments.add("--proxy");
-        arguments.add(proxy.getHttpProxy());
-      }
-    }
-
-    Result result = runCommand(binaryFile, arguments);
-    LOG.fine(
-        String.format(
-            "Using driver at location: %s, browser at location %s",
-            result.getDriverPath(), result.getBrowserPath()));
-    return result;
   }
 
   /**

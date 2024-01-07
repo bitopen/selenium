@@ -66,7 +66,8 @@ public class ChromeDriverInfo extends ChromiumDriverInfo {
   @Override
   public boolean isAvailable() {
     try {
-      DriverFinder.getResult(ChromeDriverService.createDefaultService(), getCanonicalCapabilities());
+      DriverFinder.getResult(
+          ChromeDriverService.createDefaultService(), getCanonicalCapabilities());
       return true;
     } catch (NoSuchDriverException e) {
       return false;
