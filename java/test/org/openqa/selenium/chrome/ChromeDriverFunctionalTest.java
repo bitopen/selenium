@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.SessionNotCreatedException;
@@ -52,6 +53,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   private final String CLIPBOARD_WRITE = "clipboard-write";
 
   @Test
+  @Timeout(120)
   @NoDriverBeforeTest
   public void builderGeneratesDefaultChromeOptions() {
     // This test won't pass if we want to use Chrome in a non-standard location
@@ -65,6 +67,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   @NoDriverBeforeTest
   public void builderOverridesDefaultChromeOptions() {
     ChromeOptions options = (ChromeOptions) CHROME.getCapabilities();
@@ -75,6 +78,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   @NoDriverBeforeTest
   public void driverOverridesDefaultClientConfig() {
     assertThatThrownBy(
@@ -91,6 +95,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   void builderWithClientConfigThrowsException() {
     ClientConfig clientConfig = ClientConfig.defaultConfig().readTimeout(Duration.ofMinutes(1));
     RemoteWebDriverBuilder builder =
@@ -102,6 +107,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   @Ignore(value = CHROME, reason = "https://bugs.chromium.org/p/chromedriver/issues/detail?id=4350")
   void canSetPermission() {
     HasPermissions permissions = (HasPermissions) driver;
@@ -132,6 +138,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   @Ignore(gitHubActions = true)
   void canCast() {
     HasCasting caster = (HasCasting) driver;
@@ -151,6 +158,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   @Ignore(gitHubActions = true)
   public void canCastOnDesktop() {
     HasCasting caster = (HasCasting) driver;
@@ -170,6 +178,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   void canManageNetworkConditions() {
     HasNetworkConditions conditions = (HasNetworkConditions) driver;
 
@@ -192,6 +201,7 @@ class ChromeDriverFunctionalTest extends JupiterTestBase {
   }
 
   @Test
+  @Timeout(120)
   void canExecuteCdpCommands() {
     HasCdp cdp = (HasCdp) driver;
 

@@ -22,9 +22,11 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.WebDriver;
@@ -37,6 +39,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 public abstract class JupiterTestBase {
 
+  private static final Logger LOG = Logger.getLogger(JupiterTestBase.class.getName());
   @RegisterExtension protected static SeleniumExtension seleniumExtension = new SeleniumExtension();
 
   protected TestEnvironment environment;
@@ -53,7 +56,7 @@ public abstract class JupiterTestBase {
   }
 
   @BeforeEach
-  public void prepareEnvironment() {
+  public void prepareEnvironment(TestInfo info) {
     environment = GlobalTestEnvironment.getOrCreate(InProcessTestEnvironment::new);
     appServer = environment.getAppServer();
 
@@ -62,10 +65,12 @@ public abstract class JupiterTestBase {
     driver = seleniumExtension.getDriver();
     wait = seleniumExtension::waitUntil;
     shortWait = seleniumExtension::shortWaitUntil;
+    LOG.info("start test: " + info.getDisplayName());
   }
 
   @AfterEach
-  public void quitLocalDriver() {
+  public void quitLocalDriver(TestInfo info) {
+    LOG.info("done with test: " + info.getDisplayName());
     if (localDriver != null) {
       localDriver.quit();
     }
