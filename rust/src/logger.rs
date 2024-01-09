@@ -18,7 +18,7 @@
 use crate::config::BooleanKey;
 use crate::metadata::now_unix_timestamp;
 use env_logger::fmt::Color;
-use env_logger::Target::Stdout;
+use env_logger::Target::{Stderr, Stdout};
 use env_logger::DEFAULT_FILTER_ENV;
 use log::Level;
 use log::LevelFilter::{Debug, Info, Trace};
@@ -27,7 +27,6 @@ use std::cell::RefCell;
 use std::env;
 use std::fmt::Display;
 use std::io::Write;
-use std::ops::Deref;
 use Color::{Blue, Cyan, Green, Red, Yellow};
 
 pub const DRIVER_PATH: &str = "Driver path: ";
@@ -39,6 +38,7 @@ enum OutputType {
     Logger,
     Json,
     Shell,
+    Mixed,
 }
 
 #[derive(Default)]
@@ -47,6 +47,7 @@ pub struct Logger {
     trace: bool,
     output: OutputType,
     json: RefCell<JsonOutput>,
+    minimal_json: RefCell<MinimalJson>,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -70,6 +71,12 @@ pub struct JsonOutput {
     pub result: Result,
 }
 
+#[derive(Default, Serialize, Deserialize)]
+pub struct MinimalJson {
+    pub driver_path: String,
+    pub browser_path: String,
+}
+
 impl Logger {
     pub fn new() -> Self {
         let debug = BooleanKey("debug", false).get_value();
@@ -83,11 +90,13 @@ impl Logger {
             output_type = OutputType::Json;
         } else if output.eq_ignore_ascii_case("shell") {
             output_type = OutputType::Shell;
+        } else if output.eq_ignore_ascii_case("mixed") {
+            output_type = OutputType::Mixed;
         } else {
             output_type = OutputType::Logger;
         }
         match output_type {
-            OutputType::Logger => {
+            OutputType::Logger | OutputType::Mixed => {
                 if env::var(DEFAULT_FILTER_ENV).unwrap_or_default().is_empty() {
                     let mut filter = match debug {
                         true => Debug,
@@ -96,9 +105,14 @@ impl Logger {
                     if trace {
                         filter = Trace
                     }
+                    let target = if output_type == OutputType::Logger {
+                        Stdout
+                    } else {
+                        Stderr
+                    };
                     env_logger::Builder::new()
                         .filter_module(env!("CARGO_CRATE_NAME"), filter)
-                        .target(Stdout)
+                        .target(target)
                         .format(|buf, record| {
                             let mut level_style = buf.style();
                             match record.level() {
@@ -141,6 +155,7 @@ impl Logger {
                     browser_path: "".to_string(),
                 },
             }),
+            minimal_json: RefCell::new(Default::default()),
         }
     }
 
@@ -178,12 +193,11 @@ impl Logger {
                 }
                 if level == Level::Info || level <= Level::Error {
                     if message.starts_with(DRIVER_PATH) {
-                        let driver_path = message.replace(DRIVER_PATH, "");
-                        self.json.borrow_mut().result.driver_path = driver_path.to_owned();
-                        self.json.borrow_mut().result.message = driver_path;
+                        self.json.borrow_mut().result.driver_path =
+                            self.clean_driver_path(&message);
                     } else if message.starts_with(BROWSER_PATH) {
-                        let browser_path = message.replace(BROWSER_PATH, "");
-                        self.json.borrow_mut().result.browser_path = browser_path;
+                        self.json.borrow_mut().result.browser_path =
+                            self.clean_browser_path(&message);
                     } else {
                         self.json.borrow_mut().result.message = message;
                     }
@@ -197,9 +211,26 @@ impl Logger {
                 }
             }
             _ => {
+                if self.output == OutputType::Mixed && level == Level::Info {
+                    if message.starts_with(DRIVER_PATH) {
+                        self.minimal_json.borrow_mut().driver_path =
+                            self.clean_driver_path(&message);
+                    } else if message.starts_with(BROWSER_PATH) {
+                        self.minimal_json.borrow_mut().browser_path =
+                            self.clean_browser_path(&message);
+                    }
+                }
                 log::log!(level, "{}", message);
             }
         }
+    }
+
+    fn clean_driver_path(&self, message: &str) -> String {
+        message.replace(DRIVER_PATH, "")
+    }
+
+    fn clean_browser_path(&self, message: &str) -> String {
+        message.replace(BROWSER_PATH, "")
     }
 
     fn create_json_log(&self, message: String, level: Level) -> Logs {
@@ -210,17 +241,22 @@ impl Logger {
         }
     }
 
+    fn get_json_blog<T>(&self, json_output: &T) -> String
+    where
+        T: Serialize,
+    {
+        serde_json::to_string_pretty(json_output).unwrap()
+    }
+
     pub fn set_code(&self, code: i32) {
         self.json.borrow_mut().result.code = code;
     }
 
     pub fn flush(&self) {
-        let json_output = &self.json.borrow();
-        let json = json_output.deref();
-        if !json.logs.is_empty() {
-            print!("{}", serde_json::to_string_pretty(json).unwrap());
-        } else if self.output == OutputType::Json {
-            panic!("JSON output has been specified, but no entries have been collected")
+        if self.output == OutputType::Json {
+            println!("{}", self.get_json_blog(&self.json));
+        } else if self.output == OutputType::Mixed {
+            println!("{}", self.get_json_blog(&self.minimal_json));
         }
     }
 }
